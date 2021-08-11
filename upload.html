@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Upload your pics</title>
+    <link href="https://releases.transloadit.com/uppy/v1.30.0/uppy.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <div id="drag-drop-area"></div>
+
+    <script src="https://releases.transloadit.com/uppy/v1.30.0/uppy.min.js"></script>
+    <script>
+      var uppy = Uppy.Core({
+        restrictions: {
+          maxFileSize: 10000000,        // at most 10 Mb per picture
+          maxTotalFileSize: 100000000,  // 100Mb = 10 x 10 Mb
+          maxNumberOfFiles: 10,         // at most 10 pictures
+          allowedFileTypes: ['.jpg', '.jpeg', '.png'],
+        },
+        onBeforeUpload: (files) => {
+          // we’ll be careful to return a new object, not mutating the original `files`
+          const updatedFiles = {}
+          Object.keys(files).forEach(fileID => {
+            updatedFiles[fileID] = {
+              ...files[fileID],
+              meta: {
+                ...files[fileID].meta,
+                name: 'prefix_' + files[fileID].meta.name, // modify filename
+              },
+            }
+          })
+          return updatedFiles
+        },
+      })
+
+        .use(Uppy.Dashboard, {
+          inline: true,
+          showLinkToFileUploadResult: false,
+          note: 'Only pictures (.jpg, .jpeg, .png), at most 10Mb each. Max allowed: 10 pictures',
+          target: '#drag-drop-area'
+        })
+        .use(Uppy.Tus, {endpoint: 'https://tusd.tusdemo.net/files/'})
+
+      // print to console upload errors 
+      uppy.on('upload-error', (file, error, response) => {
+        console.log('error with file:', file.id)
+        console.log('error message:', error)
+      })
+
+      // print to console upload results
+      uppy.on('complete', (result) => {
+        console.log('successful files:', result.successful)
+        console.log('failed files:', result.failed)
+      })
+    </script>
+  </body>
+</html>
